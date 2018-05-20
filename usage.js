@@ -1,7 +1,8 @@
 var dashboard = require('./index')
 
-// render function must have arity 0 and return a string
-function render () {
+// render function must return a string
+// gets passed buffered user input on stdin data
+function render (chunk) {
   return '::dashboard::\n' +
     'the time is: ' + new Date().toISOString() + '\n' +
     'refresh? [press enter]\n'

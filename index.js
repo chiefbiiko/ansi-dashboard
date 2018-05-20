@@ -21,7 +21,6 @@ function dashboard (render) {
 
   process.stdin.on('data', ondata)
   process.stdout.on('resize', onresize)
-
   ondata(null)
 
   return function update (data) {
