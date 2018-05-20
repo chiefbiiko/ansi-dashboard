@@ -24,8 +24,8 @@ function dashboard (render) {
 
   ondata(null)
 
-  return function update () {
-    ondata(null)
+  return function update (data) {
+    ondata(data)
   }
 }
 
