@@ -1,31 +1,34 @@
-var readline = require('readline')
+var EventEmitter = require('events').EventEmitter
+var inherits = require('util').inherits
+var cursorTo = require('readline').cursorTo
 var ansiDiff = require('ansi-diff')
 
-function dashboard (render) {
-  var diff = ansiDiff({ width: process.stdout.columns })
+function Dashboard (render, opts) {
+  if (!(this instanceof Dashboard)) return new Dashboard(render, opts)
+  EventEmitter.call(this, opts)
 
-  var split = render().replace(/\r?\n$/, '').split(/\n/g)
-  var y = split.length - 1
-  var x = (split[split.length - 1] || '').length + 1
+  this._diff = ansiDiff({ width: process.stdout.columns })
+  this._render = render
 
-  function onresize () {
-    diff.resize({ width: process.stdout.columns })
-    render()
-  }
-
-  function ondata (chunk) {
-    process.stdout.write(diff.update(render(chunk)), function () {
-      readline.cursorTo(process.stdout, x, y)
-    })
-  }
-
-  process.stdin.on('data', ondata)
-  process.stdout.on('resize', onresize)
-  ondata(null)
-
-  return function update (data) {
-    ondata(data)
-  }
+  process.stdin.on('data', this._ondata.bind(this))
+  this.update()
 }
 
-module.exports = dashboard
+inherits(Dashboard, EventEmitter)
+
+Dashboard.prototype._ondata = function ondata (chunk) {
+  this.emit('userinput', chunk, this.update.bind(this))
+}
+
+Dashboard.prototype._onwrite = function onwrite (x, y) {
+  cursorTo(process.stdout, x, y)
+}
+
+Dashboard.prototype.update = function update (...args) {
+  var dash = this._render(...args)
+  var x = dash.replace(/\r?\n$/, '').match(/[^\n]*$/)[0].length
+  var y = (dash.match(/\n(?=.)/g) || '').length
+  process.stdout.write(this._diff.update(dash), this._onwrite.bind(this, x, y))
+}
+
+module.exports = Dashboard

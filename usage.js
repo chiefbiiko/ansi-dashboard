@@ -1,12 +1,22 @@
-var dashboard = require('./index')
+var Dashboard = require('./index')
 
 // render function must return a string
-// gets passed buffered user input on stdin data
-function render (chunk) {
+function render (data) {
   return '::dashboard::\n' +
-    'the time is: ' + new Date().toISOString() + '\n' +
+    'data is: ' + (data || new Date().toISOString()) + '\n' +
     'refresh? [press enter]\n'
 }
 
 // call update to rerender from your program
-var update = dashboard(render)
+var dashboard = new Dashboard(render)
+
+// update dashboard on user input
+dashboard.on('userinput', function onuserinput (chunk, update) {
+  var line = chunk.toString() // check, transform, whatever user input...
+  update(/* update passes args 2 render */)
+})
+
+// update dashboard whenever
+setInterval(function () {
+  dashboard.update()
+}, 5000)
