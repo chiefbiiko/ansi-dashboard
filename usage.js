@@ -7,7 +7,7 @@ function render (data) {
     'refresh? [press enter]\n'
 }
 
-// call update to rerender from your program
+// event emitter
 var dashboard = new Dashboard(render)
 
 // update dashboard on user input
