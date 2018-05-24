@@ -1,5 +1,5 @@
-const { screencheck, screenchecks } = require('./src/screencheck.js')
+const screencheck = require('./index')
 
-screenchecks([' https://github.com', 'https://flow.org/' ])
+screencheck([ 'https://github.com/' ])
   .then(console.log)
   .catch(console.error)
