@@ -6,28 +6,18 @@ const { parse } = require('url')
 
 const CHECK_RGX = /datenschutz(?:erklärung)?2018/i // PRELIM
 const SHOTS_DIR = resolve(process.env.SHOTS_DIR || './screenshots')
-const HEADER = `<span class="date"></span>` +
-  `<span class="title"></span>` +
-  `<span class="url"></span>` +
-  `<span class="pageNumber"></span>` +
-  `<span class="totalPages"></span>`
 
 function url2filename (url) {
-  return join(SHOTS_DIR, `${parse(url).host}.pdf`)
+  return join(SHOTS_DIR, `${parse(url).host}.png`)
 }
 
 async function check (browser, url) {
   const page = await browser.newPage()
-  await page.goto(url, { timeout: 1000 })
+  await page.goto(url, { waitUntil: 'networkidle0' })
   const content = await page.content()
   const passing = CHECK_RGX.test(content)
   if (!passing) {
-    await page.emulateMedia('screen')
-    await page.pdf({
-      headerTemplate: HEADER,
-      path: url2filename(url),
-      printBackground: true
-    })
+    await page.screenshot({ path: url2filename(url), fullPage: true })
   }
   await page.close()
   return passing
@@ -35,13 +25,12 @@ async function check (browser, url) {
 
 async function screencheck (urls) {
   const browser = await launch()
-  // return new Promise((resolve, reject) => {
-  //   each(urls, check.bind(null, browser), err => {
-  //     browser.close()
-  //     err ? reject(err) : resolve(SHOTS_DIR)
-  //   })
-  // })
-  return Promise.all(urls.map(check.bind(null, browser)))
+  return new Promise((resolve, reject) => {
+    each(urls, check.bind(null, browser), async err => {
+      await browser.close()
+      err ? reject(err) : resolve(SHOTS_DIR)
+    })
+  })
 }
 
 if (!existsSync(SHOTS_DIR)) mkdirSync(SHOTS_DIR)
