@@ -1,38 +1,30 @@
-const Jimp = require('jimp')
+const dealias = require('aka-opts')
+const { loadFont, read } = require('jimp')
 const { join } = require('path')
+const { promisify } = require('util')
 
-const FONT = join(
-  './node_modules',
-  'jimp',
-  'fonts',
-  'open-sans',
-  'open-sans-16-black',
-  'open-sans-16-black.fnt'
-)
-
-async function stampic (picpath) {
-  const original = await Jimp.read(picpath)
-  const image = original.clone()
-  const font = await Jimp.loadFont(FONT)
-  image.print(font, 0, 0, new Date().toISOString(), image.bitmap.width)
-  image.write(PIC, err => { if (err) throw err })
-  return picpath
+function toFont (fontname) {
+  return loadFont(join(
+    './node_modules',
+    'jimp',
+    'fonts',
+    'open-sans',
+    fontname,
+    fontname + '.fnt'
+  ))
 }
 
-module.exports = stampic
+async function load (opts) {
+  opts = dealias(opts || {}, { font: [ 'fontname' ] })
+  opts = Object.assign({ font: 'open-sans-16-black', x: 0, y: 0 }, opts)
+  const font = await toFont(opts.font)
+  return async function stampic (picpath, stamp) {
+    stamp = stamp || new Date().toISOString()
+    const image = await read(picpath)
+    image.print(font, opts.x, opts.y, stamp, image.bitmap.width)
+    await promisify(image.write).call(image, picpath)
+    return picpath
+  }
+}
 
-// Jimp.read(PIC)
-//   .then(original => {
-//     const image = original.clone()
-//
-//     Jimp.loadFont(FONT)
-//       .then(font => {
-//         image.print(font, 0, 0, new Date().toISOString(), image.bitmap.width)
-//         image.write(PIC, err => {
-//           if (err) return console.error(err)
-//         })
-//       })
-//       .catch(console.error)
-//
-//   })
-//   .catch(console.error)
+module.exports = load
