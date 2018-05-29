@@ -15,9 +15,9 @@ function toFont (fontname) {
 }
 
 async function load (opts) {
-  opts = dealias(opts || {}, { font: [ 'fontname' ] })
-  opts = Object.assign({ font: 'open-sans-16-black', x: 0, y: 0 }, opts)
-  const font = await toFont(opts.font)
+  opts = dealias(opts || {}, { fontname: [ 'font', 'fontName' ] })
+  opts = Object.assign({ fontname: 'open-sans-16-black', x: 0, y: 0 }, opts)
+  const font = await toFont(opts.fontname)
   return async function stampic (picpath, stamp) {
     stamp = stamp || new Date().toISOString()
     const image = await read(picpath)

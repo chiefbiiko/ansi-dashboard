@@ -4,35 +4,41 @@ const { join, resolve } = require('path')
 const { launch } = require('puppeteer')
 const { parse } = require('url')
 
-const CHECK_RGX = /datenschutz(?:erklärung)?2018/i // PRELIM
-const SHOTS_DIR = resolve(process.env.SHOTS_DIR || './screenshots')
+const CHECK_RGX = /datenschutz(?:erklärung)?/i // PRELIM
 
-function url2filename (url) {
-  return join(SHOTS_DIR, `${parse(url).host}.png`)
-}
+async function screencheck (urls, dir) {
+  dir = resolve(dir || './screenshots')
+  if (!existsSync(dir)) mkdirSync(dir)
 
-async function check (browser, url) {
-  const page = await browser.newPage()
-  await page.goto(url, { waitUntil: 'networkidle0' })
-  const content = await page.content()
-  const passing = CHECK_RGX.test(content)
-  if (!passing) {
-    await page.screenshot({ path: url2filename(url), fullPage: true })
-  }
-  await page.close()
-  return passing
-}
-
-async function screencheck (urls) {
   const browser = await launch()
+  const filepaths = []
+  const url2filepath = url => join(dir, `${parse(url).host}.png`)
+
+  async function check (browser, url) {
+    const page = await browser.newPage()
+
+    await page.goto(url, { waitUntil: 'networkidle0' })
+
+    // maybe check for visible links with Datenschu... rather
+    const content = await page.content()
+    const passing = CHECK_RGX.test(content)
+
+    if (!passing) {
+      const filepath = url2filepath(url)
+      filepaths.push(filepath)
+      await page.screenshot({ path: filepath, fullPage: true })
+    }
+
+    await page.close()
+    return passing
+  }
+
   return new Promise((resolve, reject) => {
     each(urls, check.bind(null, browser), async err => {
       await browser.close()
-      err ? reject(err) : resolve(SHOTS_DIR)
+      err ? reject(err) : resolve(filepaths)
     })
   })
 }
-
-if (!existsSync(SHOTS_DIR)) mkdirSync(SHOTS_DIR)
 
 module.exports = screencheck
