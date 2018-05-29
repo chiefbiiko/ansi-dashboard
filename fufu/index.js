@@ -11,7 +11,7 @@ async function screencheck (urls, dir) {
   if (!existsSync(dir)) mkdirSync(dir)
 
   const browser = await launch()
-  const filepaths = []
+  const stash = { info: {}, filepaths: [] }
   const url2filepath = url => join(dir, `${parse(url).host}.png`)
 
   async function check (browser, url) {
@@ -22,10 +22,11 @@ async function screencheck (urls, dir) {
     // maybe check for visible links with Datenschu... rather
     const content = await page.content()
     const passing = CHECK_RGX.test(content)
+    stash.info[url] = passing
 
     if (!passing) {
       const filepath = url2filepath(url)
-      filepaths.push(filepath)
+      stash.filepaths.push(filepath)
       await page.screenshot({ path: filepath, fullPage: true })
     }
 
@@ -36,7 +37,7 @@ async function screencheck (urls, dir) {
   return new Promise((resolve, reject) => {
     each(urls, check.bind(null, browser), async err => {
       await browser.close()
-      err ? reject(err) : resolve(filepaths)
+      err ? reject(err) : resolve(stash)
     })
   })
 }
